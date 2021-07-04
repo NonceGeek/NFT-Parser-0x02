@@ -4,14 +4,14 @@
     <a-layout>
       <a-layout-header>
         <a-row class="project-name">NFT-Parser-0x02</a-row>
-        <a-row class="project-description">基本款</a-row>
+        <a-row class="project-description">分解NFT</a-row>
       </a-layout-header>
       <a-layout-content>
         <!-- 用户输入地址并显示 NFT -->
         <a-row type="flex" justify="space-between" align="middle">
           <a-col :span="16" :offset="4">
             <a-input-search
-              v-model="nftAddress"
+              v-model="evienceKey"
               size="large"
               allow-clear
               @search="fetchNFT"
@@ -64,6 +64,7 @@
                     <token-card
                       :token="pagedTokens[pageIndex - 1][index]"
                     />
+                    <h1 v-if="index<tokenCount-1" style="margin:50% auto">➡</h1>
                   </a-col>
                 </a-row>
               </div>
@@ -96,7 +97,11 @@ export default {
   },
   data() {
     return {
-      nftAddress: '0xB84DF36e58a31f98d6294420569c365e8e1acaCd',
+      evienceKeys: [
+        '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:13',
+        '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:12',
+      ],
+      evienceKey: '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:14',
       tokens: [],
       eachPageSlide: 3,
       showSlides: false,
@@ -117,18 +122,12 @@ export default {
       return arr;
     },
     searchEnabled() {
-      return this.nftAddress.length > 0
+      return this.evienceKey.length > 0
     },
   },
   created() {
-    this.checkNFTAddrInURL()
   },
   methods: {
-    checkNFTAddrInURL() {
-      if (this.$route.query.addr) {
-        this.nftAddress = this.$route.query.addr
-      }
-    },
     async fetchNFT() {
       if (!this.searchEnabled) {
         return
@@ -138,24 +137,27 @@ export default {
       this.tokens = []
 
       try {
-        const tokenLength = await this.asyncBalanceOf(this.nftAddress)
-
+        //获取父NFT
+        // await this.asyncGetEvienceKeys(this.evienceKey);
+        //将自己放到最开头
+        this.evienceKeys.unshift(this.evienceKey);
+        var tokenLength = this.evienceKeys.length;
         if (+tokenLength === 0) {
           this.infoOnZeroTokens()
           return
         }
 
-        for (let i = 0; i < tokenLength; i++) {
-          let tokenId = await this.asyncTokenOfOwnerByIndex(this.nftAddress, i)
+        for (let i = tokenLength-1; i >= 0; i--) {
+          var nums = this.evienceKeys[i].split(':')
+          var tokenId = nums[2]
+
           this.tokens.push({
             tokenId: parseInt(tokenId),
           })
         }
-
         for (let i = 0; i < this.tokens.length; i++) {
           const tokenUri = await this.asyncTokenURI(this.tokens[i].tokenId)
           this.tokens[i].tokenUri = tokenUri
-
           const evidenceKey = `${chainId}:${erc721Address}:${this.tokens[i].tokenId}`
           this.tokens[i].evidenceKey = evidenceKey
 
@@ -173,21 +175,17 @@ export default {
         }
       }
     },
-    asyncBalanceOf(nftAddress) {
-      return new Promise((resolve, reject) => {
-        erc721Contract.methods.balanceOf(nftAddress).call((err, result) => {
-          if (err) reject(err);
-          resolve(result);
-        });
-      });
-    },
-    asyncTokenOfOwnerByIndex(nftAddress, tokenIndex) {
-      return new Promise((resolve, reject) => {
-        erc721Contract.methods.tokenOfOwnerByIndex(nftAddress, tokenIndex).call((err, result) => {
-          if (err) reject(err);
-          resolve(result);
-        });
-      });
+    //获取父NFT
+    asyncGetEvienceKeys(evidenceKey){
+        this.asyncGetEvidenceByKey(evidenceKey + "#parent").then(result => {
+          if (result[0] != "") {
+            evidenceKey = result[0].replace("[", "").replace("]", "")
+            this.evienceKeys.push(evidenceKey)
+            this.asyncGetEvienceKeys(evidenceKey)
+          } else {
+            return
+          }
+        })
     },
     asyncTokenURI(tokenId) {
       return new Promise((resolve, reject) => {
@@ -217,7 +215,7 @@ export default {
         description: 'NFT 地址无效，请检查后重新查询',
       })
     }
-  },
+  }
 };
 </script>
 

@@ -1,5 +1,5 @@
 <template>
-  <a href="https://github.com/WeLightProject/NFT-Parser-0x01"
+  <a href="https://github.com/WeLightProject/NFT-Parser-0x02"
      class="github-corner"
      aria-label="View source on Github">
     <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#000000; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">

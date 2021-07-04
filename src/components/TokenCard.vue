@@ -11,6 +11,10 @@
         <span>{{ extra.name }}</span>
       </div>
       <div class="nft-extra">
+        <span>资源作者：</span>
+        <span>{{ extra.author }}</span>
+      </div>
+      <div class="nft-extra">
         <span>资源描述：</span>
         <span>{{ extra.description }}</span>
       </div>
@@ -78,6 +82,7 @@ export default {
 
       this.extra = {
         name: intro.name || '暂无',
+        author: intro.author || '暂无',
         description: intro.description || '暂无',
         url: intro.url || '暂无',
         effective_date: dayjs(intro.effective_date * 1000).format('YYYY-MM-DD HH:mm:ss') || '暂无',
