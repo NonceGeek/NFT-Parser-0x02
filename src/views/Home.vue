@@ -11,7 +11,7 @@
         <a-row type="flex" justify="space-between" align="middle">
           <a-col :span="16" :offset="4">
             <a-input-search
-              v-model="evienceKey"
+              v-model="initialEvidenceKey"
               size="large"
               allow-clear
               @search="fetchNFT"
@@ -72,7 +72,6 @@
           </a-col>
         </a-row>
       </a-layout-content>
-      <a-layout-footer></a-layout-footer>
     </a-layout>
   </div>
 </template>
@@ -85,6 +84,7 @@ import {
 } from '@/web3/erc721Contract';
 import {
   evidenceContract,
+  evidenceFactoryAddress,
 } from '@/web3/evidenceContract';
 import TokenCard from '../components/TokenCard.vue';
 import GithubLink from '@/components/GithubLink';
@@ -97,17 +97,26 @@ export default {
   },
   data() {
     return {
-      evienceKeys: [
-        '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:13',
-        '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:12',
-      ],
-      evienceKey: '1281:0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23:14',
+      defaultParams: {
+        chain_id: 1281,
+        erc721_addr: erc721Address,
+        evidence_addr: evidenceFactoryAddress,
+        token_id: 14,
+      },
+      chain_id: null,
+      erc721_addr: null,
+      evidence_addr: null,
+      token_id: null,
+      initialEvidenceKey: null,
       tokens: [],
       eachPageSlide: 3,
       showSlides: false,
     };
   },
   computed: {
+    evidenceKey() {
+      return this.chain_id + ':' + this.erc721_addr + ':' + this.token_id
+    },
     tokenCount() {
       return this.tokens.length;
     },
@@ -122,12 +131,47 @@ export default {
       return arr;
     },
     searchEnabled() {
-      return this.evienceKey.length > 0
+      return this.evidenceKey.length > 0
     },
   },
   created() {
+    this.checkQueryInUrl()
+    this.fetchNFT()
+  },
+  watch:{
+    $route(to, from) {
+      // 路由变化，但变化前后都没有带上任意默认值，则无需任何操作
+      if (!from.query.chain_id && !from.query.erc721_addr
+        && !from.query.evidence_addr && !from.query.token_id
+        && !to.query.chain_id && !to.query.erc721_addr
+        && !to.query.evidence_addr && !to.query.token_id) {
+        return
+      }
+
+      this.tokens = []
+      this.checkQueryInUrl()
+      this.fetchNFT()
+    },
   },
   methods: {
+    checkQueryInUrl() {
+      const paramList = [
+        'chain_id',
+        'erc721_addr',
+        'evidence_addr',
+        'token_id',
+      ]
+
+      for (let i = 0; i < paramList.length; i++) {
+        if (this.$route.query[paramList[i]]) {
+          this[paramList[[i]]] = this.$route.query[paramList[i]]
+        } else {
+          this[paramList[i]] = this.defaultParams[paramList[i]]
+        }
+      }
+
+      this.initialEvidenceKey = this.evidenceKey
+    },
     async fetchNFT() {
       if (!this.searchEnabled) {
         return
@@ -137,32 +181,26 @@ export default {
       this.tokens = []
 
       try {
-        //获取父NFT
-        // await this.asyncGetEvienceKeys(this.evienceKey);
-        //将自己放到最开头
-        this.evienceKeys.unshift(this.evienceKey);
-        var tokenLength = this.evienceKeys.length;
-        if (+tokenLength === 0) {
-          this.infoOnZeroTokens()
-          return
-        }
-
-        for (let i = tokenLength-1; i >= 0; i--) {
-          var nums = this.evienceKeys[i].split(':')
-          var tokenId = nums[2]
-
+        let loopFlag = true
+        while (loopFlag) {
           this.tokens.push({
-            tokenId: parseInt(tokenId),
+            tokenId: +this.token_id,
           })
-        }
-        for (let i = 0; i < this.tokens.length; i++) {
-          const tokenUri = await this.asyncTokenURI(this.tokens[i].tokenId)
-          this.tokens[i].tokenUri = tokenUri
-          const evidenceKey = `${chainId}:${erc721Address}:${this.tokens[i].tokenId}`
-          this.tokens[i].evidenceKey = evidenceKey
 
-          const result = await this.asyncGetEvidenceByKey(evidenceKey)
-          this.tokens[i].evidence = result
+          const tokenUri = await this.asyncTokenURI(this.tokens[this.tokens.length - 1].tokenId)
+          this.tokens[this.tokens.length - 1].tokenUri = tokenUri
+
+          this.tokens[this.tokens.length - 1].evidenceKey = this.evidenceKey
+
+          const result = await this.asyncGetEvidenceByKey(this.evidenceKey)
+          this.tokens[this.tokens.length - 1].evidence = result
+
+          const parentEvidence = await this.asyncGetEvidenceByKey(this.evidenceKey + '#parent')
+          if (!parentEvidence[0]) {
+            loopFlag = false
+          } else {
+            this.token_id = +parentEvidence[0].slice(2, -2).split(':')[2]
+          }
         }
 
         this.showSlides = true
@@ -174,18 +212,6 @@ export default {
           console.log(error)
         }
       }
-    },
-    //获取父NFT
-    asyncGetEvienceKeys(evidenceKey){
-        this.asyncGetEvidenceByKey(evidenceKey + "#parent").then(result => {
-          if (result[0] != "") {
-            evidenceKey = result[0].replace("[", "").replace("]", "")
-            this.evienceKeys.push(evidenceKey)
-            this.asyncGetEvienceKeys(evidenceKey)
-          } else {
-            return
-          }
-        })
     },
     asyncTokenURI(tokenId) {
       return new Promise((resolve, reject) => {

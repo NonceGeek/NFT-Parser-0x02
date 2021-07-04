@@ -227,7 +227,7 @@ const evidenceAbi = [
 
 const evidenceContract = new web3.eth.Contract(evidenceAbi, evidenceFactoryAddress)
 
-
 export {
   evidenceContract,
+  evidenceFactoryAddress,
 }

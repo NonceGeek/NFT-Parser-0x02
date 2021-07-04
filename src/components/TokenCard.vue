@@ -85,8 +85,8 @@ export default {
         author: intro.author || '暂无',
         description: intro.description || '暂无',
         url: intro.url || '暂无',
-        effective_date: dayjs(intro.effective_date * 1000).format('YYYY-MM-DD HH:mm:ss') || '暂无',
-        expiration_date: dayjs(intro.expiration_date * 1000).format('YYYY-MM-DD HH:mm:ss') || '暂无',
+        effective_date: intro.effective_date ? dayjs(intro.effective_date * 1000).format('YYYY-MM-DD HH:mm:ss') : '暂无',
+        expiration_date: intro.expiration_date ? dayjs(intro.expiration_date * 1000).format('YYYY-MM-DD HH:mm:ss') : '暂无',
         gene: intro.gene || '暂无',
       }
     },
