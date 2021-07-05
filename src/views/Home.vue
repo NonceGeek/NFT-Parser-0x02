@@ -11,10 +11,10 @@
         <a-row type="flex" justify="space-between" align="middle">
           <a-col :span="16" :offset="4">
             <a-input-search
-              v-model="initialEvidenceKey"
+              v-model="finalEvidenceKey"
               size="large"
               allow-clear
-              @search="fetchNFT"
+              @search="onSearch"
             >
               <a-button
                 slot="enterButton"
@@ -26,7 +26,7 @@
             </a-input-search>
           </a-col>
         </a-row>
-        <!-- 横向显示 NFT 列表 -->
+        <!-- 纵向显示 NFT 列表 -->
         <a-row
           v-if="showSlides"
           class="token-list"
@@ -35,40 +35,17 @@
           align="middle"
         >
           <a-col :span="16" :offset="4">
-            <a-carousel arrows>
-              <div
-                slot="prevArrow"
-                class="custom-slick-arrow"
-                style="left: 10px; zIndex: 1"
-              >
-                <a-icon type="left-circle" />
+            <a-row
+              v-for="(token, index) in tokens"
+              :key="token.tokenId"
+            >
+              <token-card :token="token" />
+              <div class="arrow-up">
+                <a-icon v-if="index + 1 < tokens.length" type="arrow-up" />
+                <a-icon v-if="index + 1 < tokens.length" type="arrow-up" />
+                <a-icon v-if="index + 1 < tokens.length" type="arrow-up" />
               </div>
-              <div
-                slot="nextArrow"
-                class="custom-slick-arrow"
-                style="right: 10px"
-              >
-                <a-icon type="right-circle" />
-              </div>
-              <div
-                v-for="pageIndex in pageCount"
-                :key="pageIndex"
-              >
-                <a-row>
-                  <a-col
-                    v-for="(tokens, index) in pagedTokens[pageIndex - 1]"
-                    :key="((pageIndex - 1) * eachPageSlide) + index"
-                    :span="24 / eachPageSlide"
-                    class="token-card"
-                  >
-                    <token-card
-                      :token="pagedTokens[pageIndex - 1][index]"
-                    />
-                    <h1 v-if="index<tokenCount-1" style="margin:50% auto">➡</h1>
-                  </a-col>
-                </a-row>
-              </div>
-            </a-carousel>
+            </a-row>
           </a-col>
         </a-row>
       </a-layout-content>
@@ -98,7 +75,7 @@ export default {
   data() {
     return {
       defaultParams: {
-        chain_id: 1281,
+        chain_id: chainId,
         erc721_addr: erc721Address,
         evidence_addr: evidenceFactoryAddress,
         token_id: 14,
@@ -107,7 +84,7 @@ export default {
       erc721_addr: null,
       evidence_addr: null,
       token_id: null,
-      initialEvidenceKey: null,
+      finalEvidenceKey: null,
       tokens: [],
       eachPageSlide: 3,
       showSlides: false,
@@ -117,21 +94,8 @@ export default {
     evidenceKey() {
       return this.chain_id + ':' + this.erc721_addr + ':' + this.token_id
     },
-    tokenCount() {
-      return this.tokens.length;
-    },
-    pageCount() {
-      return Math.ceil(this.tokenCount / this.eachPageSlide);
-    },
-    pagedTokens() {
-      const arr = [];
-      for (let i = 0; i < this.pageCount; i++) {
-        arr.push(this.tokens.slice(i * this.eachPageSlide, (i + 1) * this.eachPageSlide));
-      }
-      return arr;
-    },
     searchEnabled() {
-      return this.evidenceKey.length > 0
+      return this.finalEvidenceKey.length > 0
     },
   },
   created() {
@@ -155,12 +119,7 @@ export default {
   },
   methods: {
     checkQueryInUrl() {
-      const paramList = [
-        'chain_id',
-        'erc721_addr',
-        'evidence_addr',
-        'token_id',
-      ]
+      const paramList = Object.keys(this.defaultParams)
 
       for (let i = 0; i < paramList.length; i++) {
         if (this.$route.query[paramList[i]]) {
@@ -170,7 +129,31 @@ export default {
         }
       }
 
-      this.initialEvidenceKey = this.evidenceKey
+      // 保证 chain_id 为数字
+      this.chain_id = +this.chain_id
+
+      this.finalEvidenceKey = this.evidenceKey
+    },
+    isEvidenceKeyValid(str) {
+      return (/(\d+):(\w+):(\d+)/).test(str)
+    },
+    parseEvidenceKeyInInput() {
+      const matchResult = this.finalEvidenceKey.match(/(\d+):(\w+):(\d+)/)
+      this.chain_id = +matchResult[1]
+      this.erc721_addr = matchResult[2]
+      this.token_id = +matchResult[3]
+    },
+    onSearch() {
+      if (!this.finalEvidenceKey) {
+        return
+      }
+
+      if (!this.isEvidenceKeyValid(this.finalEvidenceKey)) {
+        this.errorOnInvalidEvidencKey()
+      }
+
+      this.parseEvidenceKeyInInput()
+      this.fetchNFT()
     },
     async fetchNFT() {
       if (!this.searchEnabled) {
@@ -203,6 +186,7 @@ export default {
           }
         }
 
+        this.tokens.reverse()
         this.showSlides = true
 
       } catch (error) {
@@ -240,14 +224,19 @@ export default {
         message: '注意！',
         description: 'NFT 地址无效，请检查后重新查询',
       })
-    }
+    },
+    errorOnInvalidEvidencKey() {
+      this.$notification.error({
+        message: '注意！',
+        description: 'EvidencKey 地址无效，请检查后重新查询',
+      })
+    },
   }
 };
 </script>
 
 <style lang="scss">
 .home {
-  height: 100%;
 
   .ant-layout {
     background-color: inherit;
@@ -273,57 +262,13 @@ export default {
 
     .token-list {
       margin-top: 50px;
-    }
-  }
-}
+      padding-bottom: 30px;
 
-.ant-carousel {
-
-  .slick-slider {
-    text-align: center;
-    height: auto;
-    overflow: hidden;
-
-    .custom-slick-arrow {
-      width: 25px;
-      height: 25px;
-      font-size: 25px;
-      color: #000;
-      opacity: 0.3;
-
-      &:before {
-        display: none;
-      }
-
-      &:hover {
-        opacity: 0.5;
+      .arrow-up {
+        text-align: center;
+        margin: 2em 0;
       }
     }
-  }
-
-  .slick-slide {
-    padding: 0 40px;
-
-    &.slick-active {
-      margin-bottom: 20px;
-    }
-
-    .token-card {
-      display: flex;
-      justify-content: center;
-    }
-  }
-
-  .slick-dots li button {
-    background: #69c0ff !important;
-  }
-
-  .slick-dots li.slick-active button {
-    background: #1890ff !important;
-  }
-
-  .slick-dots-bottom {
-    bottom: 1px !important;
   }
 }
 </style>

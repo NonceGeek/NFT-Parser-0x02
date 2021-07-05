@@ -541,9 +541,7 @@ const erc721Abi = [
   }
 ];
 const erc721Address = '0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23';
-
 const erc721Contract = new web3.eth.Contract(erc721Abi, erc721Address);
-
 const chainId = 1281;
 
 export {

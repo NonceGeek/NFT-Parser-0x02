@@ -6,30 +6,32 @@
       <div class="nft-img">
         <img :src="tokenUri">
       </div>
-      <div class="nft-extra">
-        <span>资源名称：</span>
-        <span>{{ extra.name }}</span>
-      </div>
-      <div class="nft-extra">
-        <span>资源作者：</span>
-        <span>{{ extra.author }}</span>
-      </div>
-      <div class="nft-extra">
-        <span>资源描述：</span>
-        <span>{{ extra.description }}</span>
-      </div>
-      <div class="nft-extra">
-        <span>资源链接：</span>
-        <a v-if="extra.url !== '暂无'" :href="extra.url">{{ extra.url }}</a>
-        <span v-else>暂无</span>
-      </div>
-      <div class="nft-extra">
-        <span>生效时间：</span>
-        <span>{{ extra.effective_date }}</span>
-      </div>
-      <div class="nft-extra">
-        <span>过期时间：</span>
-        <span>{{ extra.expiration_date }}</span>
+      <div class="nft-extras">
+        <div class="nft-extra">
+          <span>资源名称：</span>
+          <span>{{ extra.name }}</span>
+        </div>
+        <div class="nft-extra">
+          <span>资源作者：</span>
+          <span>{{ extra.author }}</span>
+        </div>
+        <div class="nft-extra">
+          <span>资源描述：</span>
+          <span>{{ extra.description }}</span>
+        </div>
+        <div class="nft-extra">
+          <span>资源链接：</span>
+          <a v-if="extra.url !== '暂无'" :href="extra.url">{{ extra.url }}</a>
+          <span v-else>暂无</span>
+        </div>
+        <div class="nft-extra">
+          <span>生效时间：</span>
+          <span>{{ extra.effective_date }}</span>
+        </div>
+        <div class="nft-extra">
+          <span>过期时间：</span>
+          <span>{{ extra.expiration_date }}</span>
+        </div>
       </div>
     </a-card>
   </div>
@@ -113,8 +115,8 @@ export default {
 </script>
 
 <style lang="scss">
-.ant-card {
-  width: 90%;
+.ant-card-body {
+  display: flex;
 }
 
 .ant-card-head-title {
@@ -124,20 +126,20 @@ export default {
 }
 
 .nft-img {
-  padding-bottom: 100%;
-  position: relative;
+  width: 30%;
+  padding: 0 1em;
+  box-sizing: border-box;
 
   img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
   }
 }
 
-.nft-extra {
-  text-align: left;
-  padding: 5px 0;
+.nft-extras {
+  flex: 1;
+
+  .nft-extra {
+    padding-bottom: 10px;
+  }
 }
 </style>
