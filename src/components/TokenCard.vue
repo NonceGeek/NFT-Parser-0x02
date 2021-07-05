@@ -81,14 +81,32 @@ export default {
       const intro = JSON.parse(this.token.evidence[0].replaceAll("'", '\"'))
 
       this.extra = {
-        name: intro.name || '暂无',
-        author: intro.author || '暂无',
-        description: intro.description || '暂无',
-        url: intro.url || '暂无',
-        effective_date: intro.effective_date ? dayjs(intro.effective_date * 1000).format('YYYY-MM-DD HH:mm:ss') : '暂无',
-        expiration_date: intro.expiration_date ? dayjs(intro.expiration_date * 1000).format('YYYY-MM-DD HH:mm:ss') : '暂无',
-        gene: intro.gene || '暂无',
+        name: this.formatString(intro.name),
+        author: this.formatString(intro.author),
+        description: this.formatString(intro.description),
+        url: this.formatString(intro.url),
+        effective_date: this.formatTime(intro.effective_date),
+        expiration_date: this.formatTime(intro.expiration_date),
+        gene: this.formatString(intro.gene),
       }
+    },
+    formatString(value) {
+      return !value ? '暂无': value
+    },
+    formatTime(time) {
+      if (!time) {
+        return '暂无'
+      }
+
+      if (time === 'forever') {
+        return '永久有效'
+      }
+
+      if (dayjs(time).isValid()) {
+        return dayjs(time * 1000).format('YYYY-MM-DD HH:mm:ss')
+      }
+
+      return '时间格式错误'
     },
   },
 };
